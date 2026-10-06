@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://supermercado.local/schemas/pago.rechazado.v1.json",
+  "title": "pago.rechazado",
+  "description": "Publicado cuando el pago simulado de un pedido se rechaza. pedidos-service solo lo registra: el pedido sigue en CREADO.",
+  "type": "object",
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "producer",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "const": "pago.rechazado"
+    },
+    "eventVersion": {
+      "const": 1
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "const": "pagos-service"
+    },
+    "correlationId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "payload": {
+      "type": "object",
+      "required": [
+        "pagoId",
+        "pedidoId",
+        "usuarioId",
+        "monto",
+        "moneda",
+        "motivo"
+      ],
+      "properties": {
+        "pagoId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "pedidoId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "usuarioId": {
+          "type": "string"
+        },
+        "monto": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "moneda": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "motivo": {
+          "enum": [
+            "MONTO_EXCEDE_LIMITE"
+          ]
+        }
+      }
+    }
+  }
+}

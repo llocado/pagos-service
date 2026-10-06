@@ -1,0 +1,20 @@
+services:
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: pagos-postgres
+    environment:
+      POSTGRES_DB: pagos_db
+      POSTGRES_USER: pagos_user
+      POSTGRES_PASSWORD: pagos_password
+    ports:
+      - "127.0.0.1:5435:5432" # 5432 productos-service, 5433 carrito-service, 5434 pedidos-service
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pagos_user -d pagos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:

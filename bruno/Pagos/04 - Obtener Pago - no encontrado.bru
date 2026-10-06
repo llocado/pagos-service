@@ -1,0 +1,23 @@
+meta {
+  name: 04 - Obtener Pago - no encontrado
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/pagos/00000000-0000-0000-0000-000000000000
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+assert {
+  res.status: eq 404
+}
+
+docs {
+  Un pago inexistente, o de otro usuario, responde igual (404) para no revelar que el id es valido.
+}

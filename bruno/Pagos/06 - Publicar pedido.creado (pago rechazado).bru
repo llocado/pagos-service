@@ -1,0 +1,63 @@
+meta {
+  name: 06 - Publicar pedido.creado (pago rechazado)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{rabbitmqManagementUrl}}/api/exchanges/%2F/pedidos.events/publish
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: supermercado
+  password: supermercado
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 200
+  res.body.routed: eq true
+}
+
+script:pre-request {
+  // Publica un pedido.creado de prueba a nombre del usuario del token, por la API HTTP de RabbitMQ.
+  // (En el sandbox de Bruno crypto.randomUUID no existe: se usa la libreria uuid incluida.)
+  const { v4: uuid } = require("uuid");
+  const sub = JSON.parse(atob(bru.getVar("token").split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub;
+  const envelope = {
+    eventId: uuid(),
+    eventType: "pedido.creado",
+    eventVersion: 1,
+    occurredAt: new Date().toISOString(),
+    producer: "bruno",
+    correlationId: uuid(),
+    payload: {
+      pedidoId: uuid(),
+      carritoId: uuid(),
+      usuarioId: sub,
+      total: 150000,
+      items: [{ productoId: uuid(), nombre: "Producto de prueba", precioUnitario: 150000, moneda: "CLP", cantidad: 1 }]
+    }
+  };
+  req.setBody({
+    properties: { content_type: "application/json" },
+    routing_key: "pedido.creado",
+    payload: JSON.stringify(envelope),
+    payload_encoding: "string"
+  });
+}
+
+docs {
+  Total de 150000 CLP: sobre el umbral (100000), el pago se rechaza (`MONTO_EXCEDE_LIMITE`) y se publica `pago.rechazado`.
+
+  Publica, por la API HTTP de RabbitMQ ({{rabbitmqManagementUrl}}, usuario de desarrollo de supermercado-infra), un
+  evento `pedido.creado` a nombre del usuario del token. `routed: true` confirma que alguna cola lo recibio; el pago
+  se crea de forma asincrona: mira "07 - Verificar pagos creados". Requiere pagos-service corriendo.
+
+  El pedido es inventado: pedidos-service solo registra el `pago.rechazado` en su log, asi que no deja nada pendiente.
+}

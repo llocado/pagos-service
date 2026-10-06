@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://supermercado.local/schemas/pago.aprobado.v1.json",
+  "title": "pago.aprobado",
+  "description": "Publicado cuando el pago simulado de un pedido se aprueba. Lo consumen pedidos-service (marca el pedido como PAGADO) y carrito-service (descuenta lo comprado).",
+  "type": "object",
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "producer",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "const": "pago.aprobado"
+    },
+    "eventVersion": {
+      "const": 1
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "const": "pagos-service"
+    },
+    "correlationId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "payload": {
+      "type": "object",
+      "required": [
+        "pagoId",
+        "pedidoId",
+        "carritoId",
+        "usuarioId",
+        "monto",
+        "moneda",
+        "items"
+      ],
+      "properties": {
+        "pagoId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "pedidoId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "carritoId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "usuarioId": {
+          "type": "string"
+        },
+        "monto": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "moneda": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "productoId",
+              "cantidad"
+            ],
+            "properties": {
+              "productoId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "cantidad": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

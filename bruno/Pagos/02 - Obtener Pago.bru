@@ -1,0 +1,32 @@
+meta {
+  name: 02 - Obtener Pago
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/pagos/{{pagoId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isString
+}
+
+script:pre-request {
+  // Sin pagos no hay nada que consultar: se omite este request en vez de fallar.
+  if (!bru.getVar("pagoId")) {
+    bru.runner.skipRequest();
+  }
+}
+
+docs {
+  Consulta el primer pago devuelto por "01 - Listar Mis Pagos" (variable `pagoId`). Si el usuario no tiene pagos, se
+  omite: para crear uno corre "05" o "13 - Iniciar Checkout" de la coleccion Carrito.
+}

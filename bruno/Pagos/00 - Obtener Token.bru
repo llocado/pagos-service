@@ -1,0 +1,41 @@
+meta {
+  name: 00 - Obtener Token
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{keycloakUrl}}/realms/supermercado/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+}
+
+body:form-urlencoded {
+  client_id: supermercado-web
+  grant_type: password
+  username: cliente1
+  password: cliente1
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  if (res.body && res.body.access_token) {
+    bru.setVar("token", res.body.access_token);
+  }
+}
+
+docs {
+  Pide un access token al Keycloak levantado por supermercado-infra, usando
+  el usuario de prueba cliente1 (rol "cliente"). Lo guarda en la variable de
+  entorno `token`, que el resto de las requests usan como
+  `Authorization: Bearer {{token}}`.
+
+  Requiere supermercado-infra corriendo (docker compose up -d).
+}

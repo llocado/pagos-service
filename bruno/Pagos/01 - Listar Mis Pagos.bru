@@ -1,0 +1,33 @@
+meta {
+  name: 01 - Listar Mis Pagos
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/pagos
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  // Guarda el id del primer pago (si hay) para "02 - Obtener Pago"; vacio si el usuario no tiene pagos.
+  const pagos = Array.isArray(res.body) ? res.body : [];
+  bru.setVar("pagoId", pagos.length > 0 ? pagos[0].id : "");
+}
+
+docs {
+  Lista los pagos del usuario autenticado, los mas recientes primero (el id de usuario sale del claim "sub" del token,
+  nunca de un parametro). Los pagos no se crean por REST: nacen al consumir `pedido.creado`. El flujo real es
+  "13 - Iniciar Checkout" de la coleccion Carrito; para probar este servicio aislado usa "05" y "06".
+
+  Guarda en la variable `pagoId` el id del primer pago de la lista, que usa "02 - Obtener Pago".
+}

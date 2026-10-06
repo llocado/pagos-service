@@ -1,0 +1,131 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-crear-tabla-pagos
+      author: supermercado
+      changes:
+        - createTable:
+            tableName: pagos
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_pagos
+                    nullable: false
+              - column:
+                  name: pedido_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_pagos_pedido_id
+              - column:
+                  name: usuario_id
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: monto
+                  type: numeric(12,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: moneda
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: estado
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: motivo_rechazo
+                  type: varchar(50)
+              - column:
+                  name: creado_en
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_pagos_usuario_id
+            tableName: pagos
+            columns:
+              - column:
+                  name: usuario_id
+
+  - changeSet:
+      id: 002-crear-tabla-eventos-procesados
+      author: supermercado
+      changes:
+        - createTable:
+            tableName: eventos_procesados
+            columns:
+              - column:
+                  name: event_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_eventos_procesados
+                    nullable: false
+              - column:
+                  name: procesado_en
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-crear-tabla-eventos-salida
+      author: supermercado
+      changes:
+        - createTable:
+            tableName: eventos_salida
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_eventos_salida
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: routing_key
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: correlation_id
+                  type: uuid
+              - column:
+                  name: payload
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: creado_en
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: publicado_en
+                  type: timestamp with time zone
+              - column:
+                  name: intentos
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_eventos_salida_pendientes
+            tableName: eventos_salida
+            columns:
+              - column:
+                  name: publicado_en
+              - column:
+                  name: creado_en

@@ -1,0 +1,163 @@
+plugins {
+	id 'java'
+	id 'jvm-test-suite'
+	id 'org.springframework.boot' version '4.1.0'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
+	id 'info.solidsoft.pitest' version '1.19.0'
+	id 'org.sonarqube' version '7.5.0.8588'
+}
+
+group = 'com.supermercado'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+// Versiones parcheadas por vulnerabilidades conocidas (GHSA) en las que gestiona Spring Boot 4.1.0.
+ext['tomcat.version'] = '11.0.25'
+ext['jackson-bom.version'] = '3.1.7'
+ext['log4j2.version'] = '2.25.5'
+ext['netty.version'] = '4.2.17.Final'
+ext['rabbit-amqp-client.version'] = '5.34.0'
+ext['postgresql.version'] = '42.7.12'
+ext['spring-framework.version'] = '7.0.9'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+	implementation 'org.springframework.boot:spring-boot-starter-amqp'
+	implementation 'org.springframework.boot:spring-boot-liquibase'
+	implementation 'org.liquibase:liquibase-core'
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	runtimeOnly 'org.postgresql:postgresql'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.springframework.amqp:spring-rabbit-test'
+	testCompileOnly 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+testing {
+	suites {
+		test {
+			useJUnitJupiter('6.0.3')
+		}
+
+		intTest(JvmTestSuite) {
+			useJUnitJupiter('6.0.3')
+
+			targets {
+				all {
+					testTask.configure {
+						group = 'verification'
+						description = 'Ejecuta los tests de integracion (Testcontainers + PostgreSQL + RabbitMQ) del proyecto.'
+						shouldRunAfter(test)
+					}
+				}
+			}
+		}
+	}
+}
+
+dependencies {
+	intTestImplementation platform('org.springframework.boot:spring-boot-dependencies:4.1.0')
+
+	intTestImplementation project()
+
+	intTestImplementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	intTestImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	intTestImplementation 'org.springframework.boot:spring-boot-starter-validation'
+	intTestImplementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+	intTestImplementation 'org.springframework.boot:spring-boot-starter-amqp'
+	intTestImplementation 'org.springframework.boot:spring-boot-starter-test'
+	intTestImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	intTestImplementation 'org.springframework.security:spring-security-test'
+	intTestImplementation 'org.springframework.amqp:spring-rabbit-test'
+
+	intTestImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	intTestImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+	intTestImplementation 'org.testcontainers:testcontainers-postgresql'
+	intTestImplementation 'org.testcontainers:testcontainers-rabbitmq'
+	// Solo tests: valida los eventos publicados contra los JSON Schema reales de docs/events/.
+	intTestImplementation 'com.networknt:json-schema-validator:3.0.8'
+	intTestImplementation 'org.awaitility:awaitility'
+
+	intTestRuntimeOnly 'org.postgresql:postgresql'
+	intTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	intTestCompileOnly 'org.projectlombok:lombok'
+	intTestAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+// --- Cobertura (JaCoCo) y analisis estatico (SonarQube) ---
+jacoco {
+	toolVersion = '0.8.15'
+}
+
+// Cobertura combinada de test (unitarios) + intTest (integracion): los tests de
+// integracion cubren adaptadores (JPA, REST, RabbitMQ) que los unitarios no tocan.
+// Requiere Docker (intTest). Informe: build/reports/jacoco/jacocoFullReport/index.html
+tasks.register('jacocoFullReport', JacocoReport) {
+	group = 'verification'
+	description = 'Informe JaCoCo combinado de test + intTest (HTML y XML).'
+	dependsOn tasks.named('test'), tasks.named('intTest')
+	executionData.from(layout.buildDirectory.files('jacoco/test.exec', 'jacoco/intTest.exec'))
+	sourceSets sourceSets.main
+	classDirectories.setFrom(files(sourceSets.main.output.classesDirs.files.collect {
+		fileTree(dir: it, exclude: ['**/*Application.class'])
+	}))
+	reports {
+		xml.required = true
+		html.required = true
+	}
+}
+
+// Uso: SONAR_TOKEN=<token> ./gradlew sonar   (SonarQube local de supermercado-infra)
+sonar {
+	properties {
+		property 'sonar.projectKey', 'supermercado-pagos'
+		property 'sonar.projectName', 'pagos-service'
+		property 'sonar.host.url', System.getenv('SONAR_HOST_URL') ?: 'http://localhost:9000'
+		property 'sonar.coverage.jacoco.xmlReportPaths',
+				layout.buildDirectory.file('reports/jacoco/jacocoFullReport/jacocoFullReport.xml').get().asFile.path
+		property 'sonar.exclusions', '**/*Application.java'
+	}
+}
+
+tasks.named('sonar') {
+	dependsOn tasks.named('jacocoFullReport')
+}
+
+// --- Tests de mutacion (PIT) ---
+// Introduce cambios pequenos en el codigo (mutantes: invertir un if, cambiar un > por >=, ...) y
+// comprueba que algun test falle. Un mutante que sobrevive = comportamiento que los tests no vigilan.
+// Alcance: dominio, casos de uso, politica de pago y validacion del listener, solo con los tests unitarios (rapido, sin Docker).
+// Uso: ./gradlew pitest   Informe: build/reports/pitest/index.html
+pitest {
+	pitestVersion = '1.30.0'
+	junit5PluginVersion = '1.2.3'
+	targetClasses = ['com.supermercado.pagos.domain.*', 'com.supermercado.pagos.application.*', 'com.supermercado.pagos.infrastructure.messaging.listener.*']
+	targetTests = ['com.supermercado.pagos.domain.*', 'com.supermercado.pagos.application.*', 'com.supermercado.pagos.infrastructure.messaging.listener.*']
+	threads = 4
+	outputFormats = ['HTML', 'XML']
+	timestampedReports = false
+}

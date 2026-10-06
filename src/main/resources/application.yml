@@ -1,0 +1,95 @@
+spring:
+  application:
+    name: pagos-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5435}/${DB_NAME:pagos_db}
+    username: ${DB_USER:pagos_user}
+    password: ${DB_PASSWORD:pagos_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Con la base caida, falla en 5 s (por defecto 30 s) en vez de dejar hilos y reintentos esperando.
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:5000}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # El esquema lo gestiona Liquibase; Hibernate solo valida que las
+      # entidades coincidan con lo que Liquibase ya creo.
+      ddl-auto: validate
+    show-sql: ${JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: true
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Realm de Keycloak levantado por supermercado-infra.
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/supermercado}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:supermercado}
+    password: ${RABBITMQ_PASSWORD:supermercado}
+    # Con RabbitMQ inalcanzable falla en 5 s (por defecto ~60 s) en vez de dejar hilos esperando.
+    connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:5s}
+    # El publicador del outbox necesita confirmaciones y devoluciones: solo marca un evento como
+    # publicado si RabbitMQ lo confirma Y alguna cola lo recibio (mandatory + returns).
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        # Un mensaje que falla NUNCA se reencola: tras los reintentos va a la DLQ
+        # (sin esto, RabbitMQ lo reentregaba en bucle infinito).
+        default-requeue-rejected: false
+        # 1 intento original + 3 reintentos (esperas de 1s, 2s y 4s); luego va a la DLQ.
+        # Los rechazos definitivos (payload invalido) no se reintentan: ver RabbitMQConfig.
+        retry:
+          enabled: true
+          max-retries: 3
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 10s
+
+server:
+  port: ${SERVER_PORT:8083}
+
+pagos:
+  simulacion:
+    # Pago simulado: se rechaza si el total del pedido supera este umbral (CLP). Determinista a proposito.
+    umbral-rechazo: ${PAGOS_UMBRAL_RECHAZO:100000}
+  outbox:
+    # Cada cuanto el publicador revisa eventos_salida y cuantos eventos toma por vuelta.
+    intervalo: ${PAGOS_OUTBOX_INTERVALO:1s}
+    lote: ${PAGOS_OUTBOX_LOTE:50}
+    espera-confirmacion: ${PAGOS_OUTBOX_ESPERA_CONFIRMACION:5s}
+
+logging:
+  level:
+    root: INFO
+    com.supermercado: INFO
+    # Este handler escribe ~90 lineas de stack trace por cada mensaje rechazado; el listener ya registra
+    # una linea concisa con el eventId, y los fallos tras los reintentos los registra RejectAndDontRequeueRecoverer.
+    org.springframework.amqp.listener.ConditionalRejectingErrorHandler: ERROR
+    # Con la base caida, Hikari escribe un WARN con stack trace por cada reintento de conexion y por cada conexion
+    # rota, Hibernate otro por cada SQL fallido y TransactionTemplate otro ("excepcion sobrescrita por la de
+    # rollback", en TransactionTemplate y en TransactionInterceptor) si la base cae a mitad de una operacion: ~80
+    # lineas cada uno. El fallo ya lo registran, en
+    # una linea, el GlobalExceptionHandler y el PublicadorOutbox.
+    com.zaxxer.hikari.pool.PoolBase: ERROR
+    com.zaxxer.hikari.pool.ProxyConnection: ERROR
+    org.hibernate.orm.jdbc.error: ERROR
+    org.springframework.transaction.support.TransactionTemplate: "OFF"
+    org.springframework.transaction.interceptor.TransactionInterceptor: "OFF"
+  pattern:
+    # Agrega [requestId|correlationId] y reemplaza saltos de linea en el mensaje:
+    # evita que un valor controlado por un cliente falsifique lineas de log.
+    console: "%clr(%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(%5p) %clr(${PID:-}){magenta} %clr(---){faint} ${LOGGED_APPLICATION_NAME:-}%clr([%15.15t]){faint} %clr([%X{requestId:-}|%X{correlationId:-}]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %replace(%m){'[\\r\\n]','_'}%n%wEx"

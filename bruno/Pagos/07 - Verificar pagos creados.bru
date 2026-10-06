@@ -1,0 +1,37 @@
+meta {
+  name: 07 - Verificar pagos creados
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/pagos
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:pre-request {
+  // Los pagos se crean de forma asincrona al consumir el evento: espera a que el servicio los procese.
+  await bru.sleep(2500);
+}
+
+tests {
+  test("hay al menos un pago APROBADO y uno RECHAZADO", function () {
+    const estados = res.body.map((p) => p.estado);
+    expect(estados).to.include("APROBADO");
+    expect(estados).to.include("RECHAZADO");
+  });
+}
+
+docs {
+  Corre despues de "05" y "06": comprueba que el servicio proceso los dos eventos y creo un pago aprobado y otro
+  rechazado a nombre del usuario del token.
+}
