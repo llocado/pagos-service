@@ -13,7 +13,7 @@ Cuando `pedidos-service` publica `pedido.creado`, este servicio **simula** el pa
 
 - Si el total del pedido **no supera** el umbral (`pagos.simulacion.umbral-rechazo`, 100000 CLP por defecto) el pago
   queda `APROBADO` y se publica `pago.aprobado` (lo consumen `pedidos-service`, que marca el pedido como PAGADO, y
-  `carrito-service`, que descuenta del carrito lo comprado).
+  `carrito-service`, que descuenta del carrito lo comprado, y `app-productos`, que descuenta el stock).
 - Si lo supera queda `RECHAZADO` (`MONTO_EXCEDE_LIMITE`) y se publica `pago.rechazado`; el pedido sigue en CREADO.
 
 La regla es determinista a proposito: se puede probar el rechazo en tests, en Bruno y en las pruebas de fallo.

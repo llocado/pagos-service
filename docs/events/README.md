@@ -6,7 +6,7 @@ Contrato del bus de eventos (RabbitMQ) segun el ROADMAP del proyecto (seccion "C
 
 Exchange `pagos.events` (topic), routing key = `eventType`. Se publican con el patron *outbox*: el evento se guarda en la tabla `eventos_salida` en la misma transaccion que el pago, y `PublicadorOutbox` lo envia despues con confirmacion de RabbitMQ y `mandatory` (si ninguna cola lo recibe, queda pendiente y se reintenta). La entrega es at-least-once, asi que todo consumidor debe ser idempotente por `eventId`. El `eventId` es determinista (tipo + id del pago).
 
-- **`pago.aprobado`** — [pago.aprobado.schema.json](./pago.aprobado.schema.json). Consumido por `pedidos-service` (pasa el pedido a PAGADO) y `carrito-service` (descuenta del carrito los items y cantidades comprados).
+- **`pago.aprobado`** — [pago.aprobado.schema.json](./pago.aprobado.schema.json). Consumido por `pedidos-service` (pasa el pedido a PAGADO) `carrito-service` (descuenta del carrito los items y cantidades comprados) y `app-productos` (descuenta el stock de cada item pagado, todo o nada; si no alcanza publica `stock.descuento-rechazado`).
 - **`pago.rechazado`** — [pago.rechazado.schema.json](./pago.rechazado.schema.json). Consumido por `pedidos-service`, que solo lo registra (el pedido sigue en CREADO; reintentar el pago esta fuera de alcance por ahora).
 
 ## Consume (consumidor)
