@@ -22,7 +22,7 @@ ext['tomcat.version'] = '11.0.25'
 ext['jackson-bom.version'] = '3.1.7'
 ext['log4j2.version'] = '2.25.5'
 ext['netty.version'] = '4.2.17.Final'
-ext['rabbit-amqp-client.version'] = '5.34.0'
+ext['rabbit-amqp-client.version'] = '5.37.0'
 ext['postgresql.version'] = '42.7.12'
 ext['spring-framework.version'] = '7.0.9'
 
