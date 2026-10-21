@@ -130,6 +130,25 @@ class PublicadorOutboxTest {
         verify(rabbitTemplate, never()).send(anyString(), anyString(), any(Message.class), any());
     }
 
+    @Test
+    void publicarPendientes_DeberiaCortarElLote_CuandoElHiloEstaInterrumpido() {
+        EventoSalidaEntity primero = evento(null, 0);
+        EventoSalidaEntity segundo = evento(null, 0);
+        when(repositorio.bloquearPendientes(50)).thenReturn(List.of(primero, segundo));
+
+        Thread.currentThread().interrupt();
+        try {
+            publicador.publicarPendientes();
+            assertThat(Thread.currentThread().isInterrupted()).as("conserva la interrupcion").isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+
+        verify(rabbitTemplate, times(1)).send(anyString(), anyString(), any(Message.class), any());
+        assertThat(primero.getIntentos()).isEqualTo(1);
+        assertThat(segundo.getIntentos()).as("el resto del lote no se intenta").isZero();
+    }
+
     private static EventoSalidaEntity evento(UUID correlacion, int intentos) {
         EventoSalidaEntity evento = new EventoSalidaEntity();
         evento.setId(UUID.randomUUID());

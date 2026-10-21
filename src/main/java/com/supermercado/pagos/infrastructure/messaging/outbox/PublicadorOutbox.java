@@ -116,8 +116,9 @@ public class PublicadorOutbox {
             }
             return Resultado.BROKER_NO_DISPONIBLE;
         } catch (InterruptedException e) {
+            // Hilo interrumpido (apagado): cortar el lote, el resto esperaria y fallaria igual.
             Thread.currentThread().interrupt();
-            return Resultado.PENDIENTE;
+            return Resultado.BROKER_NO_DISPONIBLE;
         }
     }
 
