@@ -37,6 +37,10 @@ public class PedidoEventListener {
 
     static final int MAX_ITEMS = 500;
     static final int MAX_USUARIO_ID = 100;
+    static final int MAX_CANTIDAD = 10_000;
+    static final int MAX_ESCALA = 2;
+    /** Lo que cabe en numeric(12,2): un importe mayor desbordaria la columna y el mensaje se reintentaria en vano. */
+    static final BigDecimal MAX_IMPORTE = new BigDecimal("9999999999.99");
     private static final Pattern MONEDA = Pattern.compile("^[A-Z]{3}$");
 
     private final ProcesarPagoDePedidoUseCase procesarPagoDePedidoUseCase;
@@ -125,15 +129,23 @@ public class PedidoEventListener {
     private static String validarItem(ItemDto item) {
         if (item == null) return "item nulo";
         if (item.productoId() == null) return "item sin productoId";
-        if (item.precioUnitario() == null || item.precioUnitario().signum() < 0) return "item con precio invalido";
+        if (precioInvalido(item.precioUnitario())) return "item con precio invalido";
         if (item.moneda() == null || !MONEDA.matcher(item.moneda()).matches()) return "item con moneda invalida";
-        if (item.cantidad() <= 0) return "item con cantidad invalida";
+        if (item.cantidad() <= 0 || item.cantidad() > MAX_CANTIDAD) return "item con cantidad invalida";
         return null;
+    }
+
+    private static boolean precioInvalido(BigDecimal precio) {
+        return precio == null || precio.signum() < 0 || precio.compareTo(MAX_IMPORTE) > 0
+                || precio.stripTrailingZeros().scale() > MAX_ESCALA;
     }
 
     /** El total debe ser positivo y coincidir con la suma de los items: un evento incoherente no se paga. */
     private static String validarTotal(PedidoCreadoPayload payload) {
-        if (payload.total() == null || payload.total().signum() <= 0) return "total invalido";
+        if (payload.total() == null || payload.total().signum() <= 0 || payload.total().compareTo(MAX_IMPORTE) > 0
+                || payload.total().stripTrailingZeros().scale() > MAX_ESCALA) {
+            return "total invalido";
+        }
         BigDecimal suma = payload.items().stream()
                 .map(i -> i.precioUnitario().multiply(BigDecimal.valueOf(i.cantidad())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

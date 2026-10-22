@@ -128,6 +128,45 @@ class PedidoEventListenerTest {
     }
 
     @Test
+    void deberiaAceptarLaCantidadTopeExacta_YRechazarUnaMas() {
+        String tope = item(1, PedidoEventListener.MAX_CANTIDAD);
+        listener.escucharPedidoCreado(envelope(payload("\"u1\"", "[" + tope + "]", String.valueOf(PedidoEventListener.MAX_CANTIDAD))));
+
+        verify(procesarPago).execute(any());
+        clearInvocations(procesarPago);
+        String sobre = item(1, PedidoEventListener.MAX_CANTIDAD + 1);
+        assertRechazado(envelope(payload("\"u1\"", "[" + sobre + "]", String.valueOf(PedidoEventListener.MAX_CANTIDAD + 1))));
+    }
+
+    @Test
+    void deberiaAceptarElImporteTopeExacto_YRechazarUnCentavoMas() {
+        String tope = "9999999999.99";
+        String itemTope = ITEM.replace("\"precioUnitario\":1500", "\"precioUnitario\":" + tope).replace("\"cantidad\":2", "\"cantidad\":1");
+        listener.escucharPedidoCreado(envelope(payload("\"u1\"", "[" + itemTope + "]", tope)));
+
+        verify(procesarPago).execute(any());
+        clearInvocations(procesarPago);
+        String sobre = "10000000000.00";
+        String itemSobre = itemTope.replace(tope, sobre);
+        assertRechazado(envelope(payload("\"u1\"", "[" + itemSobre + "]", sobre)));
+    }
+
+    @Test
+    void deberiaRechazar_CuandoElPrecioOElTotalTienenMasDeDosDecimales() {
+        String itemFino = ITEM.replace("\"precioUnitario\":1500", "\"precioUnitario\":0.001").replace("\"cantidad\":2", "\"cantidad\":1000");
+        assertRechazado(envelope(payload("\"u1\"", "[" + itemFino + "]", "1")));
+        assertRechazado(envelope(payload("\"u1\"", "[" + ITEM + "]", "3000.001")));
+    }
+
+    @Test
+    void deberiaAceptar_CuandoLosDecimalesSonDosOSoloCerosDeRelleno() {
+        String itemDecimal = ITEM.replace("\"precioUnitario\":1500", "\"precioUnitario\":1500.500").replace("\"cantidad\":2", "\"cantidad\":2");
+        listener.escucharPedidoCreado(envelope(payload("\"u1\"", "[" + itemDecimal + "]", "3001.00")));
+
+        verify(procesarPago).execute(any());
+    }
+
+    @Test
     void deberiaRechazar_CuandoLosItemsTienenMonedasDistintas() {
         String usd = ITEM.replace("\"CLP\"", "\"USD\"");
         assertRechazado(envelope(payload("\"u1\"", "[" + ITEM + "," + usd + "]", "6000")));
