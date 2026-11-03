@@ -1,5 +1,7 @@
 # pagos-service
 
+[![Tests](https://github.com/llocado/pagos-service/actions/workflows/tests.yml/badge.svg)](https://github.com/llocado/pagos-service/actions/workflows/tests.yml)
+
 Microservicio de pagos del proyecto supermercado. Arquitectura hexagonal, mismo estilo que `productos-service`,
 `carrito-service` y `pedidos-service`: casos de uso en `application/usecase`, puertos en `application/port`,
 adaptadores en `infrastructure/*`.
