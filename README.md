@@ -4,8 +4,8 @@ Microservicio de pagos del proyecto supermercado. Arquitectura hexagonal, mismo 
 `carrito-service` y `pedidos-service`: casos de uso en `application/usecase`, puertos en `application/port`,
 adaptadores en `infrastructure/*`.
 
-El diseno completo del proyecto (decisiones de arquitectura, mapa de servicios, contrato de eventos) esta en
-`docs/ROADMAP.md` del repo `app-productos` (documento interno, no publicado).
+Este servicio es una pieza de un sistema mayor (catalogo, carrito, pedidos, pagos, Keycloak y tienda web). El diseno completo, el diagrama
+de eventos y la demo de un comando estan en el repo [`supermercado`](https://github.com/llocado/supermercado).
 
 ## Que hace
 

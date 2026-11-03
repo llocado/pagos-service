@@ -1,6 +1,6 @@
 # Eventos de pagos-service
 
-Contrato del bus de eventos (RabbitMQ) segun el ROADMAP del proyecto (seccion "Contrato de eventos"). Cada evento va en el envelope comun (`eventId`, `eventType`, `eventVersion`, `occurredAt`, `producer`, `correlationId`, `payload`). El `correlationId` es el id del checkout de `carrito-service` y se propaga por toda la cadena.
+Contrato del bus de eventos (RabbitMQ) segun el contrato comun del proyecto. Cada evento va en el envelope comun (`eventId`, `eventType`, `eventVersion`, `occurredAt`, `producer`, `correlationId`, `payload`). El `correlationId` es el id del checkout de `carrito-service` y se propaga por toda la cadena.
 
 ## Publica (productor)
 
