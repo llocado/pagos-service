@@ -72,6 +72,15 @@ pagos:
     lote: ${PAGOS_OUTBOX_LOTE:50}
     espera-confirmacion: ${PAGOS_OUTBOX_ESPERA_CONFIRMACION:5s}
 
+purga:
+  # Retencion de eventos_procesados (idempotencia) y eventos_salida (outbox): una pasada al dia. El plazo de
+  # eventos_procesados debe ser mayor que lo que un duplicado puede esperar en una cola; de eventos_salida solo se
+  # borra lo ya publicado.
+  cron: ${PURGA_CRON:0 30 3 * * *}
+  eventos-procesados-dias: ${PURGA_EVENTOS_PROCESADOS_DIAS:30}
+  eventos-salida-dias: ${PURGA_EVENTOS_SALIDA_DIAS:7}
+  lote: ${PURGA_LOTE:1000}
+
 logging:
   level:
     root: INFO

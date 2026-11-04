@@ -13,6 +13,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Guarda el evento (envelope completo en JSON) en eventos_salida, dentro de la transaccion del
@@ -58,5 +59,11 @@ public class EventoSalidaAdapter implements EventoSalidaPort {
         entity.setCreadoEn(ahora);
         entity.setIntentos(0);
         springDataEventoSalidaRepository.saveAndFlush(entity);
+    }
+
+    @Override
+    @Transactional
+    public int eliminarPublicadosAnterioresA(Instant limite, int lote) {
+        return springDataEventoSalidaRepository.eliminarPublicadosAnterioresA(limite, lote);
     }
 }

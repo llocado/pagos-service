@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -25,5 +26,11 @@ public class EventoProcesadoAdapter implements EventoProcesadoPort {
         entity.setEventId(eventId);
         entity.setProcesadoEn(Instant.now());
         springDataEventoProcesadoRepository.save(entity);
+    }
+
+    @Override
+    @Transactional
+    public int eliminarProcesadosAnterioresA(Instant limite, int lote) {
+        return springDataEventoProcesadoRepository.eliminarAnterioresA(limite, lote);
     }
 }

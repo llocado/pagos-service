@@ -35,7 +35,7 @@ docker compose up -d      # Postgres de este servicio
 - Idempotente por `eventId` y por pedido (`pagos.pedido_id` unico). Un choque de unicidad concurrente se comprueba
   (`yaProcesado`) y, si era un duplicado, se descarta; si no, se propaga.
 - La API es **de solo lectura**: los pagos solo nacen al consumir `pedido.creado`. El usuario sale siempre del JWT.
-- `eventos_salida` y `eventos_procesados` crecen sin limite (retencion pendiente, ver `../docs/seguridad-pendiente.md`).
+- Retencion: `PurgaEventosJob` (diaria, `purga.*`) borra `eventos_procesados` de mas de 30 dias y los `eventos_salida` YA publicados de mas de 7; los pendientes nunca. Ver `../docs/seguridad-pendiente.md`.
 
 ## Estado del repo
 

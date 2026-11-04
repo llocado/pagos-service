@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-indice-eventos-procesados-por-fecha
+      author: supermercado
+      comment: La purga diaria busca por procesado_en; sin indice recorreria toda la tabla en cada lote.
+      changes:
+        - createIndex:
+            indexName: idx_eventos_procesados_procesado_en
+            tableName: eventos_procesados
+            columns:
+              - column:
+                  name: procesado_en

@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @EnableScheduling
-@EnableConfigurationProperties({PagosConfig.SimulacionProperties.class, OutboxProperties.class})
+@EnableConfigurationProperties({PagosConfig.SimulacionProperties.class, OutboxProperties.class, PurgaProperties.class})
 public class PagosConfig {
 
     /** pagos.simulacion.*: umbral por encima del cual el pago simulado se rechaza. */

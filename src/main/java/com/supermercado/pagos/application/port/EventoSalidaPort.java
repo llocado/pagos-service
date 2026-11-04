@@ -3,6 +3,7 @@ package com.supermercado.pagos.application.port;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
 
 /**
  * Registra un evento de dominio para publicarlo despues (patron outbox): se guarda en la misma
@@ -25,4 +26,10 @@ public interface EventoSalidaPort {
     void registrar(PagoAprobado evento, UUID correlationId);
 
     void registrar(PagoRechazado evento, UUID correlationId);
+
+    /**
+     * Retencion: borra hasta {@code lote} eventos YA publicados antes de {@code limite} y devuelve cuantos borro. Nunca
+     * toca los pendientes (publicado_en nulo): un evento sin publicar no se descarta por antiguo que sea.
+     */
+    int eliminarPublicadosAnterioresA(Instant limite, int lote);
 }

@@ -1,3 +1,5 @@
 databaseChangeLog:
   - include:
       file: db/changelog/changes/001-crear-tablas-pagos.yaml
+  - include:
+      file: db/changelog/changes/002-indice-eventos-procesados-por-fecha.yaml
